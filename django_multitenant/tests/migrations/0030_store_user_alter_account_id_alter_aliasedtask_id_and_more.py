@@ -18,8 +18,17 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             "ALTER TABLE auth_group ALTER COLUMN id SET DATA TYPE bigint;"
         ),
-        migrations.RunSQL("SET LOCAL citus.multi_shard_modify_mode TO 'sequential';"),
-        migrations.RunSQL("SELECT create_reference_table('auth_user');"),
+    ]
+
+    if settings.USE_CITUS:
+        operations += [
+            migrations.RunSQL(
+                "SET LOCAL citus.multi_shard_modify_mode TO 'sequential';"
+            ),
+            migrations.RunSQL("SELECT create_reference_table('auth_user');"),
+        ]
+
+    operations += [
         migrations.AddField(
             model_name="store",
             name="user",

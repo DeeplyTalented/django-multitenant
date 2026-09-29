@@ -4,8 +4,11 @@ import pytest
 import django
 
 from django.conf import settings
-from django.db.models import Count
-from django.db.utils import NotSupportedError, DataError
+from django.db import connection
+from django.db.models import Count, F, Value
+from django.db.models.functions import Concat
+from django.db.utils import NotSupportedError, DataError, IntegrityError
+from django.test.utils import CaptureQueriesContext
 from .models import Store, Product, Purchase, Staff, StoreStaff
 
 
@@ -245,7 +248,9 @@ class TenantModelTest(BaseTestCase):
         for i in range(10):
             projects.append(Project(name=f"project {i}"))
 
-        with self.assertRaises(DataError):
+        # Citus rejects rows without a distribution column value, plain
+        # PostgreSQL rejects them with the NOT NULL constraint.
+        with self.assertRaises(DataError if settings.USE_CITUS else IntegrityError):
             Project.objects.bulk_create(projects)
 
     @pytest.mark.skipif(
@@ -295,6 +300,46 @@ class TenantModelTest(BaseTestCase):
         project = Project.objects.first()
         self.assertEqual(project.account, account)
         self.assertEqual(project.name, "test update")
+
+    def test_save_update_adds_tenant_filter(self):
+        from .models import Project
+
+        account = self.account_fr
+        project = Project.objects.create(account=account, name="test save fr")
+
+        set_current_tenant(account)
+        project.name = "test update name"
+        with CaptureQueriesContext(connection) as captured_queries:
+            project.save()
+        unset_current_tenant()
+
+        update_queries = [
+            query["sql"]
+            for query in captured_queries.captured_queries
+            if query["sql"].startswith("UPDATE")
+        ]
+        self.assertEqual(len(update_queries), 1)
+        self.assertIn(f'"tests_project"."account_id" = {account.id}', update_queries[0])
+
+    @pytest.mark.skipif(
+        django.VERSION < (6, 0),
+        reason="Model.save() refreshes expression values starting Django 6.0",
+    )
+    def test_save_update_refreshes_expression_values(self):
+        from .models import Project
+
+        account = self.account_fr
+        project = Project.objects.create(account=account, name="test save fr")
+
+        set_current_tenant(account)
+        project.name = Concat(F("name"), Value(" updated"))
+        project.save()
+        unset_current_tenant()
+
+        # The value is assigned from UPDATE ... RETURNING. If it wasn't returned,
+        # the field would be deferred and reading it would query the database.
+        with self.assertNumQueries(0):
+            self.assertEqual(project.name, "test save fr updated")
 
     def test_delete_tenant_set(self):
         from .models import Project
@@ -511,18 +556,23 @@ class TenantModelTest(BaseTestCase):
         self.assertEqual(Account.objects.count(), 2)
 
         query_count = 18 if django.VERSION >= (4, 2) else 16
+        if not settings.USE_CITUS:
+            # No SET LOCAL citus.multi_shard_modify_mode queries
+            query_count -= 2
         with self.assertNumQueries(query_count) as captured_queries:
             country.delete()
 
             self.assertEqual(Account.objects.count(), 0)
             self.assertEqual(Country.objects.count(), 0)
-            self.assertTrue(
+            self.assertEqual(
+                settings.USE_CITUS,
                 "SET LOCAL citus.multi_shard_modify_mode TO 'sequential';"
-                in [query["sql"] for query in captured_queries.captured_queries]
+                in [query["sql"] for query in captured_queries.captured_queries],
             )
-            self.assertTrue(
+            self.assertEqual(
+                settings.USE_CITUS,
                 "SET LOCAL citus.multi_shard_modify_mode TO 'parallel';"
-                in [query["sql"] for query in captured_queries.captured_queries]
+                in [query["sql"] for query in captured_queries.captured_queries],
             )
 
     def test_delete_cascade_distributed_to_reference(self):
@@ -554,6 +604,9 @@ class TenantModelTest(BaseTestCase):
         set_current_tenant(account)
 
         query_count = 29 if django.VERSION >= (4, 2) else 28
+        if not settings.USE_CITUS:
+            # No SET LOCAL citus.multi_shard_modify_mode queries
+            query_count -= 2
         with self.assertNumQueries(query_count) as captured_queries:
             account.delete()
 
@@ -562,13 +615,15 @@ class TenantModelTest(BaseTestCase):
             self.assertEqual(Employee.objects.count(), 0)
             self.assertEqual(ModelConfig.objects.count(), 0)
             self.assertEqual(Project.objects.count(), 20)
-            self.assertTrue(
+            self.assertEqual(
+                settings.USE_CITUS,
                 "SET LOCAL citus.multi_shard_modify_mode TO 'sequential';"
-                in [query["sql"] for query in captured_queries.captured_queries]
+                in [query["sql"] for query in captured_queries.captured_queries],
             )
-            self.assertTrue(
+            self.assertEqual(
+                settings.USE_CITUS,
                 "SET LOCAL citus.multi_shard_modify_mode TO 'parallel';"
-                in [query["sql"] for query in captured_queries.captured_queries]
+                in [query["sql"] for query in captured_queries.captured_queries],
             )
 
         unset_current_tenant()

@@ -1,7 +1,7 @@
 *.pyc
 *~
 .env/*
-django_multitenant.egg-info/
+django_multitenant_dt.egg-info/
 .venv
 .tox/
 venv/*

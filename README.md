@@ -20,16 +20,17 @@ https://www.citusdata.com/blog/2023/05/09/evolving-django-multitenant-to-build-s
 
 
 ## Installation:
-1. `pip install  --no-cache-dir django_multitenant`
+1. `pip install  --no-cache-dir django-multitenant-dt`
 
 ## Supported Django versions/Pre-requisites.
 
-| Python                | Django        |Citus          |
-| ----------------------| --------------|---------------|
-| 3.8 3.9 3.10 3.11     | 4.2           | 11  12        |
-| 3.8 3.9 3.10 3.11     | 4.1           | 11  12        |
-| 3.8 3.9 3.10 3.11     | 4.0           | 10  11  12    |
-| 3.7                   | 3.2           | 10  11  12    |
+| Python                   | Django        |Citus          |
+| -------------------------| --------------|---------------|
+| 3.12 3.13 3.14           | 6.0           | 13            |
+| 3.10 3.11 3.12 3.13 3.14 | 5.2           | 13            |
+| 3.10 3.11 3.12           | 4.2           | 13            |
+
+CI runs the test suite against plain PostgreSQL. Citus support was verified manually with Citus 13.
 
 
 
