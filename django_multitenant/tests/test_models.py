@@ -253,13 +253,6 @@ class TenantModelTest(BaseTestCase):
         with self.assertRaises(DataError if settings.USE_CITUS else IntegrityError):
             Project.objects.bulk_create(projects)
 
-    @pytest.mark.skipif(
-        not settings.USE_CITUS,
-        reason=(
-            """ If table is distributed, we can't update the tenant column. 
-                    If Citus is not enabled in settings, there is no reason to run this test."""
-        ),
-    )
     def test_update_tenant_project(self):
         from .models import Project
 
@@ -861,7 +854,15 @@ class MultipleTenantModelTest(BaseTestCase):
         managers = self.project_managers
         unset_current_tenant()
         projects_per_manager = ProjectManager.objects.annotate(Count("project_id"))
-        list(projects_per_manager)
+        with CaptureQueriesContext(connection) as captured_queries:
+            list(projects_per_manager)
+
+        # Django collapses GROUP BY to the primary key unless the backend opts the
+        # model out. The tenant column must stay in it for a composite primary key.
+        self.assertRegex(
+            captured_queries.captured_queries[0]["sql"],
+            r'GROUP BY .*"tests_projectmanager"\."account_id"',
+        )
 
     def test_many_to_many_through_saves(self):
         store = Store.objects.create(name="store1")
@@ -913,4 +914,11 @@ class MultipleTenantModelTest(BaseTestCase):
         template = Template.objects.create(name="template", business=business)
         template.save()
 
-        Template.objects.filter(business__tenant=tenant).first()
+        with CaptureQueriesContext(connection) as captured_queries:
+            Template.objects.filter(business__tenant=tenant).first()
+
+        # The join on a TenantForeignKey must also match the tenant columns.
+        self.assertRegex(
+            captured_queries.captured_queries[0]["sql"],
+            r'"tests_template"\."tenant_id" = \(?"tests_business"\."tenant_id"',
+        )

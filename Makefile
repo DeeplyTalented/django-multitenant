@@ -3,7 +3,7 @@ export DJANGO_SETTINGS_MODULE=django_multitenant.tests.settings
 test-dependencies:
 	pip install -r requirements/test-requirements.txt 
 	# Installed together so pip picks a djangorestframework release that supports DJANGO_VERSION.
-	pip install Django=="${DJANGO_VERSION}" djangorestframework
+	pip install Django~="${DJANGO_VERSION}.0" djangorestframework
 
 test:
 	py.test  --cov-report xml --cov=django_multitenant/tests/. -s django_multitenant/tests/ -k 'not concurrency' --ignore django_multitenant/tests/test_missing_modules.py

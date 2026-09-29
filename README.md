@@ -22,6 +22,11 @@ https://www.citusdata.com/blog/2023/05/09/evolving-django-multitenant-to-build-s
 ## Installation:
 1. `pip install  --no-cache-dir django-multitenant-dt`
 
+`django-multitenant-dt` installs the same `django_multitenant` package directory as upstream `django-multitenant`.
+When switching, replace `django-multitenant` with `django-multitenant-dt` in the same change and rebuild existing
+environments. Uninstalling `django-multitenant` after `django-multitenant-dt` is installed deletes the package files
+both distributions share.
+
 ## Supported Django versions/Pre-requisites.
 
 | Python                   | Django        |Citus          |
