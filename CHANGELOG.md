@@ -1,3 +1,13 @@
+### Django-Multitenant v4.2.0 (September 29, 2026) ###
+
+* Published as `django-multitenant-dt`, the DeeplyTalented fork of `django-multitenant`
+
+* Adds Django 5.2 and 6.0 support
+
+* Adds Python 3.12, 3.13 and 3.14 support, requires Python 3.10 or newer
+
+* Runs the test suite against plain PostgreSQL, Citus-specific tests only run with `USE_CITUS=1`
+
 ### Django-Multitenant v4.1.1 (December 18, 2023) ###
 
 * Fix utils to not require TENANT_USE_ASGIREF to be defined in the host django project (#206)

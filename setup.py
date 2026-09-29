@@ -14,18 +14,18 @@ with open(path.join(this_directory, "README.md")) as f:
 
 setup(
     name="django-multitenant-dt",
-    version="4.1.1",  # Required
+    version="4.2.0",  # Required
     description="Django Library to Implement Multi-tenant databases",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/citusdata/django-multitenant",
-    author="Gurkan Indibay",
-    author_email="gindibay@microsoft.com",
+    url="https://github.com/deeplytalented/django-multitenant",
+    author="DeeplyTalented, Gurkan Indibay",
+    author_email="lboldys@deeplytalented.com",
     # Classifiers help users find your project by categorizing it.
     #
     # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[
-        "Development Status :: 5 - Production/Stable ",
+        "Development Status :: 5 - Production/Stable",
         "Topic :: Database",
         "License :: OSI Approved :: MIT License",
         "Intended Audience :: Developers",
