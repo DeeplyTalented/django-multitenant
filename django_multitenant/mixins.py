@@ -143,7 +143,10 @@ class TenantModelMixin:
         return super().__setattr__(attrname, val)
 
     # pylint: disable=too-many-arguments
-    def _do_update(self, base_qs, using, pk_val, values, update_fields, forced_update):
+    # Django 6.0 added the returning_fields argument, *args forwards it.
+    def _do_update(
+        self, base_qs, using, pk_val, values, update_fields, forced_update, *args
+    ):
         # adding tenant filters for save
         # Citus requires tenant_id filters for update, hence doing this below change.
 
@@ -165,7 +168,7 @@ class TenantModelMixin:
             logger.warning(empty_tenant_message)
 
         return super()._do_update(
-            base_qs, using, pk_val, values, update_fields, forced_update
+            base_qs, using, pk_val, values, update_fields, forced_update, *args
         )
 
     def save(self, *args, **kwargs):

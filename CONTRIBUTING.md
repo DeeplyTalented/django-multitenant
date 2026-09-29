@@ -38,16 +38,20 @@ chmod +x .git/hooks/pre-commit
 
 ### Running tests
 
-In one shell start a docker compose citus cluster:
+In one shell start a PostgreSQL server with docker compose:
 ```bash
-docker-compose --project-name django-multitenant up -d || { docker-compose logs && false ; }
+docker compose --project-name django-multitenant up -d || { docker compose logs && false ; }
 ```
 
-Then in another shell run the tests:
+Then in another shell run the tests (Django 6.0 requires Python 3.12 or newer):
 
 ```bash
-export DJANGO_VERSION=4.1
-export CITUS_VERSION=11.2
+export DJANGO_VERSION=6.0
 make test-dependencies 
 make test
 ```
+
+The tests run against plain PostgreSQL by default. To also exercise the Citus-specific code paths
+(table distribution, `citus.multi_shard_modify_mode`), run them with `USE_CITUS=1` against a Citus
+cluster whose coordinator listens on `DATABASE_HOST`/`DATABASE_PORT` and whose workers are reachable as
+`django-multitenant_worker1_1` and `django-multitenant_worker2_1` (see `tests/migrations/0002_distribute.py`).

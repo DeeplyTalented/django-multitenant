@@ -67,4 +67,9 @@ class Migration(migrations.Migration):
         assert len(accounts) == 6
         assert country is not None
 
+        # Remove the rows so their primary keys don't collide with the fixed
+        # primary keys used by the test fixtures on plain PostgreSQL.
+        Account.objects.using(db_alias).all().delete()
+        Country.objects.using(db_alias).all().delete()
+
     operations = [migrations.RunPython(forwards_func)]

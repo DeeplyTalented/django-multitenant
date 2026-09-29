@@ -73,8 +73,8 @@ TEMPLATES = [
     },
 ]
 
-USE_CITUS = True
-CITUS_EXTENSION_INSTALLED = True
+USE_CITUS = os.environ.get("USE_CITUS", "0") == "1"
+CITUS_EXTENSION_INSTALLED = USE_CITUS
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ = True
